@@ -1,0 +1,49 @@
+version: '3.6'
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - '80:80'
+    volumes:
+      - ${PROJECT_PATH}:/var/www/html
+      - ${NGINX_CONF_DIR}:/etc/nginx/conf.d
+      - ${NGINX_LOGS}:/var/log/nginx
+    container_name: nginx-container
+    links:
+      - wordpress
+
+  wordpress:
+    build: docker/fpm
+    links:
+      - mysql
+    environment:
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME}
+      - WORDPRESS_DB_USER=${WORDPRESS_DB_USER}
+      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}
+      - WORDPRESS_TABLE_PREFIX=${WORDPRESS_TABLE_PREFIX}
+      - XDEBUG_CONFIG=remote_host=${XDEBUG_REMOTE_HOST} remote_port=${XDEBUG_REMOTE_PORT} remote_enable=${XDEBUG_REMOTE_ENABLE}
+    volumes:
+      - ${PROJECT_PATH}:/var/www/html
+    container_name: wordpress-container
+
+  mysql:
+    image: mysql:5.7.20
+    volumes:
+      - ${MYSQL_DATA}:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_USER=${WORDPRESS_DB_USER}
+      - MYSQL_PASSWORD=${WORDPRESS_DB_PASSWORD}
+      - MYSQL_DATABASE=${WORDPRESS_DB_NAME}
+    container_name: mysql-container
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+    ports:
+      - 8090:80
+    links:
+      - mysql
+    container_name: phpmyadmin-container
